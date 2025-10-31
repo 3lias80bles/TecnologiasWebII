@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 
 class Config:
@@ -9,4 +10,10 @@ class Config:
         f"{os.getenv('DB_HOST')}/"
         f"{os.getenv('DB_NAME')}"
     )
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    JWT_SECRET = os.getenv("JWT_SECRET_KEY")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False  
+
+    #Token 
+    JWT_ACCESS_TOKEN_EXPIRES  = timedelta(hours = 24)
+    JWT_REFRESH_TOKEN_EXPIRES  = timedelta(days = 7)

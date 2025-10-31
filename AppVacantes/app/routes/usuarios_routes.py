@@ -1,39 +1,56 @@
-from flask import Blueprint, request, jsonify
-from app.data import usuarios
+# En este archivo iran las rutas o EndPoints que tengan que ver con el CRUD de usuarios.
 
+from flask import Blueprint, request, jsonify
+from app.services.UsuarioServices import UsuarioService
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+# Se crea el Blueprint
 usuarios_bp = Blueprint('usuarios', __name__)
 
 #Listado Usuarios
 @usuarios_bp.route("/",methods = ['GET'])
+@jwt_required() # Proteger la ruta con JWT
 def obtener_todos():
-    return jsonify(usuarios),200
+    usuarios = UsuarioService.obtenerUsuarios()
+
+    # Verificar si hay usuarios, si no hay, retornar un mensaje adecuado.
+    if not usuarios:
+        return jsonify({"message": 'No hay usuarios en la base de datos'}),404
+
+    return jsonify(usuarios)
 
 #Crear Usuarios
-@usuarios_bp.route("/",methods = ['POST'])
+@usuarios_bp.route("/crear", methods = ['POST'])
 def crear_usuario():
-    nuevo = request.get_json()
-    if not nuevo.get('nombre_usuario') or not nuevo.get ('password'):
-        return jsonify({'error': 'faltan campos obligatorios'}),400
-    nuevo["id"] = len(usuarios)+1
-    usuarios.append(nuevo)
-    return jsonify({'menssaje': 'Usuario creado exitosamente', 'usuario': nuevo}),201
+    nuevo = request.get_json() or {}
+    
+    respuesta = UsuarioService.crear_usuario(
+        nombre_usuario = nuevo.get('nombre_usuario'),
+        password = nuevo.get('password'),
+        rol_id = nuevo.get('rol_id')
+    )
+    return respuesta
 
-#Correr la aplicacion 
-#probar los endpoints en postman
-#Buscar un usuario por id
-@usuarios_bp.route('/', methods=['GET'])
+# Buscar un usuario por id
+@usuarios_bp.route('/<int:usuario_id>', methods=['GET'])
 def obtener_usuario_por_id(usuario_id):
-    for usuario in usuarios:
-        if usuario.get('id') == usuario_id:
-            return jsonify(usuario), 200
-    return jsonify({'error': 'Usuario no encontrado'}), 404
+    usuario = UsuarioService.obtener_usuario_por_id(usuario_id)
+    return usuario
 
-#Actualizar informacion de usuario
-@usuarios_bp.route('/', methods=['PUT'])
+# Actualizar informacion de un usuario
+@usuarios_bp.route('/<int:usuario_id>', methods=['PUT'])
 def actualizar_usuario(usuario_id):
-    datos_actualizados = request.get_json()
-    for usuario in usuarios:
-        if usuario.get('id') == usuario_id:
-            usuario.update(datos_actualizados)
-            return jsonify({'mensaje': 'Usuario actualizado', 'usuario': usuario}), 200
-    return jsonify({'error': 'Usuario no encontrado'}), 404
+    # Obtener los datos actualizados del usuario desde la solicitud
+    datos_actualizados = request.get_json() or {}
+
+    # Llamar al servicio para actualizar el usuario
+    usuario = UsuarioService.actualizar_usuario(usuario_id, datos_actualizados)
+
+    return usuario
+
+# Eliminar un usuario por su id
+@usuarios_bp.route('/<int:usuario_id>', methods=['DELETE'])
+def eliminar_usuario(usuario_id):
+    # Llamar al servicio para eliminar el usuario
+    usuario = UsuarioService.eliminar_usuario(usuario_id)
+    return usuario

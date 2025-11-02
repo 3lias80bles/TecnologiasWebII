@@ -2,11 +2,11 @@ from flask import Flask
 from dotenv import load_dotenv
 from app.routes.usuarios_routes import usuarios_bp
 from app.routes.roles_routes import roles_bp
-from app.routes.auth_routes import AuthUsuario
+from app.routes.auth_routes import auth_bp as auth_bp
 
 from .extensions import db,jwt
 
-from app.models.UsuariosModel import UsuarioModel
+from app.models.UsuariosModel import UsuariosModel
 
 
 load_dotenv()
@@ -24,17 +24,18 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
 
-    #cargar una configuracion
-    app.config.from_object('config.Config')
-
-
+    # Para probar de manera local: crear/actualizar las tablas sólo si la conexión funciona.
     with app.app_context():
-        #db.drop_all()
-        db.create_all()
-
+        try:
+            #db.drop_all()  # Elimina las tablas en la base de datos si existen. Cada que se reinicie la app se borran los datos.
+            db.create_all()  # Crea las tablas en la base de datos si no existen.
+        except Exception as e:
+            # No romper el arranque por errores de conexión (credenciales/DB apagada).
+            print('Advertencia: no se pudieron crear/actualizar las tablas:', e)
+    
     #Registrar blueprints
-    app.register_blueprint(usuarios_bp,urlprefix='/usuarios')
-    app.register_blueprint(roles_bp,urlprefix='/roles')
-    app.register_blueprint(auth_bp,urlprefix='/auth')
+    app.register_blueprint(usuarios_bp,url_prefix='/usuarios')
+    app.register_blueprint(roles_bp,url_prefix='/roles')
+    app.register_blueprint(auth_bp,url_prefix='/auth')
 
     return app

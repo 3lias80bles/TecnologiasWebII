@@ -9,15 +9,15 @@ usuarios_bp = Blueprint('usuarios', __name__)
 
 #Listado Usuarios
 @usuarios_bp.route("/",methods = ['GET'])
-@jwt_required() # Proteger la ruta con JWT
+#@jwt_required() # Proteger la ruta con JWT
 def obtener_todos():
-    usuarios = UsuarioService.obtenerUsuarios()
+    usuarios = UsuarioService.obtener_usuarios()
 
     # Verificar si hay usuarios, si no hay, retornar un mensaje adecuado.
     if not usuarios:
         return jsonify({"message": 'No hay usuarios en la base de datos'}),404
 
-    return jsonify(usuarios)
+    return usuarios
 
 #Crear Usuarios
 @usuarios_bp.route("/crear", methods = ['POST'])

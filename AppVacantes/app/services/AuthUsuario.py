@@ -2,7 +2,7 @@ from app.models.UsuariosModel import UsuariosModel
 
 class AuthUsuario:
     @staticmethod
-    def authenticateUser(nombre_usuario,password):
+    def authenticate_user(nombre_usuario,password):
         usuario_db = UsuariosModel.query.filter_by (nombre_usuario=nombre_usuario).first()
 
         if usuario_db and usuario_db.password == password:

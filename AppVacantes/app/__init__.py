@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from app.routes.usuarios_routes import usuarios_bp
 from app.routes.roles_routes import roles_bp
 from app.routes.auth_routes import auth_bp as auth_bp
-from app.routes.vacantes_routes import vacantes_bp#importar 
+from app.routes.vacantes_routes import vacantes_bp as vacantes_bp
 
 from .extensions import db,jwt
 

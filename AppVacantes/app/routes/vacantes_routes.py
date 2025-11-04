@@ -1,115 +1,145 @@
-# En este archivo irán las rutas o EndPoints que tengan que ver con el CRUD de vacantes.
-
+# En este archivo iran las rutas o EndPoints que tengan que ver con el CRUD de vacantes.
 from flask import Blueprint, jsonify, request
-from app.models.VacantesModel import VacantesModel
-from app.extensions import db
-from datetime import date
+from app.services.VacanteService import VacantesService
+# Importa decoradores y funciones para manejar tokens JWT y la identidad del usuario.
+from flask_jwt_extended import jwt_required, get_jwt
 
-# Se crea el Blueprint
+# Creación del Blueprint para agrupar rutas de vacantes.
 vacantes_bp = Blueprint('vacantes', __name__)
 
-# -----------------------------
-#  Obtener todas las vacantes
-# -----------------------------
+# Endpoint para listar todas las vacantes (acceso público).
 @vacantes_bp.route('/', methods=['GET'])
-def obtener_vacantes():
-    vacantes = VacantesModel.query.all()
-    
+def obtener_todas():
+    vacantes = VacantesService.obtener_vacantes()
+
     if not vacantes:
-        return jsonify({'mensaje': 'No hay vacantes registradas'}), 404
-    
-    return jsonify([v.to_dict() for v in vacantes]), 200
+        return jsonify({'mensaje': 'No hay vacantes disponibles'}), 404
 
+    return jsonify(vacantes)
 
-# -----------------------------
-#  Crear una nueva vacante
-# -----------------------------
-@vacantes_bp.route('/crear', methods=['POST'])
-def crear_vacante():
-    data = request.get_json() or {}
-    
-    nombre_vacante = data.get('nombre_vacante')
-    descripcion = data.get('descripcion')
-    detalles = data.get('detalles')
-    creador = data.get('creador')
-
-    if not nombre_vacante or not descripcion:
-        return jsonify({'error': 'Faltan campos obligatorios'}), 400
-
-    nueva_vacante = VacantesModel(
-        nombre_vacante=nombre_vacante,
-        descripcion=descripcion,
-        detalles=detalles,
-        creador=creador,
-        fecha_publicacion=date.today()
-    )
-
-    try:
-        db.session.add(nueva_vacante)
-        db.session.commit()
-        return jsonify({'mensaje': 'Vacante creada exitosamente', 'vacante': nueva_vacante.to_dict()}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Error al crear la vacante', 'detalle': str(e)}), 500
-
-
-# -----------------------------
-#  Buscar una vacante por ID
-# -----------------------------
+# Endpoint para listar detalles de una vacante por ID. Requiere autenticación.
 @vacantes_bp.route('/<int:vacante_id>', methods=['GET'])
+@jwt_required()
 def obtener_vacante_por_id(vacante_id):
-    vacante = VacantesModel.query.get(vacante_id)
+    # Verifica que el usuario sea 'postulante' para acceder a los detalles.
+    rol = get_jwt().get('role')
+
+    if rol != 'postulante':
+        return jsonify({'error': 'No tienes permisos para ver los detalles de la vacante'}), 403
+
+    vacante = VacantesService.obtener_vacante_por_id(vacante_id)
+
     if not vacante:
-        return jsonify({'error': 'Vacante no encontrada'}), 404
-    return jsonify(vacante.to_dict()), 200
+        return jsonify({'mensaje': 'Vacante no encontrada'}), 404
+
+    return jsonify(vacante)
 
 
-# -----------------------------
-#  Actualizar una vacante
-# -----------------------------
-@vacantes_bp.route('/<int:vacante_id>', methods=['PUT'])
-def actualizar_vacante(vacante_id):
-    vacante = VacantesModel.query.get(vacante_id)
-    if not vacante:
-        return jsonify({'error': 'Vacante no encontrada'}), 404
-
-    data = request.get_json() or {}
-
-    # Sobrescribir atributos si vienen en el body
-    if 'nombre_vacante' in data:
-        vacante.nombre_vacante = data['nombre_vacante']
-    if 'descripcion' in data:
-        vacante.descripcion = data['descripcion']
-    if 'detalles' in data:
-        vacante.detalles = data['detalles']
-    if 'estado' in data:
-        vacante.estado = data['estado']
-    if 'postulador' in data:
-        vacante.postulador = data['postulador']
+# Endpoint para listar vacantes creadas por el usuario autenticado ('reclutador').
+@vacantes_bp.route('/mis_vacantes', methods=['GET'])
+@jwt_required()
+def obtener_mis_vacantes():
+    # Obtiene el ID del creador desde el token JWT.
+    usuario_id = get_jwt().get('id_usuario')
+    print("ID del usuario desde el token JWT:", usuario_id)
     
-    vacante.fecha_edicion = date.today()
+    vacantes = VacantesService.obtener_vacantes_por_usuario(usuario_id)
 
-    try:
-        db.session.commit()
-        return jsonify({'mensaje': 'Vacante actualizada exitosamente', 'vacante': vacante.to_dict()}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Error al actualizar la vacante', 'detalle': str(e)}), 500
+    if not vacantes:
+        return jsonify({'mensaje': 'No has creado vacantes'}), 404
 
+    return jsonify(vacantes)
 
-# -----------------------------
-#  Eliminar una vacante
-# -----------------------------
-@vacantes_bp.route('/<int:vacante_id>', methods=['DELETE'])
-def eliminar_vacante(vacante_id):
-    vacante = VacantesModel.query.get(vacante_id)
-    if not vacante:
-        return jsonify({'error': 'Vacante no encontrada'}), 404
+# Endpoint para listar todas las vacantes disponibles. Solo accesible para 'postulante'.
+@vacantes_bp.route('/disponibles', methods=['GET'])
+@jwt_required()
+def obtener_disponibles():
+    # Verifica que el rol sea 'postulante'.
+    rol = get_jwt().get('role')
 
-    try:
-        db.session.delete(vacante)
-        db.session.commit()
-        return jsonify({'mensaje': 'Vacante eliminada exitosamente'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': 'Error al eliminar la vacante', 'detalle': str(e)}), 500
+    if rol != 'postulante':
+        return jsonify({'error': 'No tienes permisos para ver vacantes disponibles'}), 403
+
+    # Llama al servicio pidiendo TODAS las vacantes disponibles.
+    vacantes = VacantesService.obtener_vacantes_disponibles(todas=True)
+
+    if not vacantes:
+        return jsonify({'mensaje': 'No hay vacantes disponibles'}), 404
+
+    return jsonify(vacantes)
+
+# Endpoint para listar las 3 vacantes disponibles más recientes. Solo accesible para 'postulante'.
+@vacantes_bp.route('/disponibles/ultimas', methods=['GET'])
+@jwt_required()
+def obtener_ultimas_disponibles():
+    # Verifica que el rol sea 'postulante'.
+    rol = get_jwt().get('role')
+
+    if rol != 'postulante':
+        return jsonify({'error': 'No tienes permisos para ver vacantes disponibles'}), 403
+
+    # Llama al servicio pidiendo SOLO las últimas (todas=False).
+    vacantes = VacantesService.obtener_vacantes_disponibles(todas=False)
+
+    if not vacantes:
+        return jsonify({'mensaje': 'No hay vacantes disponibles'}), 404
+
+    return jsonify(vacantes)
+
+# Endpoint para crear nuevas vacantes. Solo accesible para 'reclutador'.
+@vacantes_bp.route('/crear', methods=['POST'])
+@jwt_required()
+def crear_vacante():
+    # Obtiene el rol y el ID del usuario del token.
+    rol = get_jwt().get('role')
+    creador = get_jwt().get('id_usuario')
+
+    # Verifica que el rol sea 'reclutador'.
+    if rol != 'Reclutador':
+        return jsonify({'error': 'No tienes permisos para crear vacantes'}), 403
+
+    # Obtiene los datos del cuerpo de la solicitud JSON.
+    nueva = request.get_json() or {}
+    
+    # Llama al servicio para la creación.
+    respuesta = VacantesService.crear_vacante(
+        nombre_vacante = nueva.get('nombre_vacante'),
+        descripcion = nueva.get('descripcion'),
+        detalles = nueva.get('detalles'),
+        fecha_publicacion = nueva.get('fecha_publicacion'),
+        fecha_edicion = nueva.get('fecha_edicion'),
+        estado = nueva.get('estado'),
+        creador = creador, # Asigna el ID del creador desde el token
+        postulador = nueva.get('postulador')
+    )
+    return respuesta
+
+# Endpoint para asignar una vacante a un postulante. Solo accesible para 'reclutador'.
+@vacantes_bp.route('/asignar/<int:vacante_id>', methods=['PUT'])
+@jwt_required()
+def asignar_vacante(vacante_id):
+    # Verifica que el rol sea 'reclutador'.
+    rol = get_jwt().get('role')
+
+    if rol != 'reclutador':
+        return jsonify({'error': 'No tienes permisos para asignar vacantes'}), 403
+
+    # Obtiene los datos de actualización (incluyendo 'postulador').
+    datos_actualizados = request.get_json() or {}
+
+    # Llama al servicio para la asignación.
+    vacante = VacantesService.asignar_vacante(vacante_id, datos_actualizados)
+
+    return vacante
+
+# Endpoint para actualizar/editar una vacante. Requiere autenticación.
+@vacantes_bp.route('/<int:vacante_id>', methods=['PUT'])
+@jwt_required()
+def actualizar_vacante(vacante_id):
+    # Obtiene los datos actualizados.
+    datos_actualizados = request.get_json() or {}
+
+    # Llama al servicio para la actualización.
+    vacante = VacantesService.actualizar_vacante(vacante_id, datos_actualizados)
+
+    return vacante

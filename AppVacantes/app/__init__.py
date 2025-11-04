@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from app.routes.usuarios_routes import usuarios_bp
 from app.routes.roles_routes import roles_bp
 from app.routes.auth_routes import auth_bp as auth_bp
+from app.routes.vacantes_routes import vacantes_bp#importar 
 
 from .extensions import db,jwt
 
@@ -37,5 +38,6 @@ def create_app():
     app.register_blueprint(usuarios_bp,url_prefix='/usuarios')
     app.register_blueprint(roles_bp,url_prefix='/roles')
     app.register_blueprint(auth_bp,url_prefix='/auth')
+    app.register_blueprint(vacantes_bp, url_prefix='/vacantes')
 
     return app

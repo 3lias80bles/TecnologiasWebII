@@ -40,7 +40,13 @@ export default function App() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div style={{
+      padding: "20px",
+      maxWidth: "600px",
+      margin: "0 auto",
+      textAlign: "center",
+      fontFamily: "Arial"
+    }}>
       <h1>Gestor de Tareas</h1>
       <TaskForm addTask={addTask} />
 

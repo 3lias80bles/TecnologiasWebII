@@ -6,11 +6,17 @@ export default function TaskForm({ addTask }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         addTask(text);
-        setText(""); // limpiar input
+        setText("");
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
+        <form onSubmit={handleSubmit} style={{
+            marginBottom: "20px",
+            marginBottom: "20px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "10px"
+        }}>
             <input
                 type="text"
                 placeholder="Escribe una tarea..."

@@ -5,7 +5,7 @@ import TaskList from "./components/TaskList";
 export default function App() {
   const [tasks, setTasks] = useState([]);
 
-  const addTask = (text) => {
+  const addTask = (text, date, TaskTime) => {
     // Validación
     if (!text.trim()) {
       alert("La tarea no puede estar vacía.");
@@ -23,6 +23,8 @@ export default function App() {
     const newTask = {
       id: Date.now(),
       text,
+      date,
+      TaskTime,
       completed: false
     };
 
@@ -38,26 +40,27 @@ export default function App() {
   const deleteTask = (id) => {
     setTasks(tasks.filter(t => t.id !== id));
   };
+  const pendingCount = tasks.filter(task => !task.completed).length;
+  const completedCount = tasks.filter(task => task.completed).length;
+
 
   return (
-    <div style={{
-      padding: "20px",
-      maxWidth: "600px",
-      margin: "0 auto",
-      textAlign: "center",
-      fontFamily: "Arial"
-    }}>
+    <div >
+
+
       <h1>Gestor de Tareas</h1>
       <TaskForm addTask={addTask} />
 
       <h2>Pendientes</h2>
+      <p><strong>Tareas pendientes:</strong> {pendingCount}</p>
       <TaskList
         tasks={tasks.filter(t => !t.completed)}
         toggleTask={toggleTask}
         deleteTask={deleteTask}
-      />
 
+      />
       <h2>Completadas</h2>
+      <p><strong>Tareas completadas:</strong> {completedCount}</p>
       <TaskList
         tasks={tasks.filter(t => t.completed)}
         toggleTask={toggleTask}

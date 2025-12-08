@@ -9,6 +9,9 @@ export default function TaskItem({ task, toggleTask, deleteTask }) {
             >
                 {task.text}
             </span>
+            <span style={{ marginRight: "15px", color: "gray" }}>
+                {task.date || "Sin fecha"}
+            </span>
 
             <button onClick={() => toggleTask(task.id)}>
                 {task.completed ? "Desmarcar" : "Completar"}

@@ -11,3 +11,4 @@ __pycache__/
 .~lock.*
 
 env/
+node_modules/

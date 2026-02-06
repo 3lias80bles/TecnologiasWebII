@@ -72,25 +72,20 @@ def obtener_disponibles():
 
 # Endpoint para listar las 3 vacantes disponibles más recientes. Solo accesible para 'postulante'.
 @vacantes_bp.route('/disponibles/ultimas', methods=['GET'])
-@jwt_required()
+
 def obtener_ultimas_disponibles():
-    # Verifica que el rol sea 'postulante'.
-    rol = get_jwt().get('role')
-
-    if rol != 'postulante':
-        return jsonify({'error': 'No tienes permisos para ver vacantes disponibles'}), 403
-
+   
     # Llama al servicio pidiendo SOLO las últimas (todas=False).
     vacantes = VacantesService.obtener_vacantes_disponibles(todas=False)
 
     if not vacantes:
-        return jsonify({'mensaje': 'No hay vacantes disponibles'}), 404
+        return sonify([]), 200
 
-    return jsonify(vacantes)
+    return jsonify(vacantes),200
 
 # Endpoint para crear nuevas vacantes. Solo accesible para 'reclutador'.
 @vacantes_bp.route('/crear', methods=['POST'])
-@jwt_required()
+#@jwt_required()
 def crear_vacante():
     # Obtiene el rol y el ID del usuario del token.
     rol = get_jwt().get('role')

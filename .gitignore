@@ -1,0 +1,13 @@
+
+
+__pycache__/
+*.pyc[cod]
+
+.py__test__cache/
+# Otros
+.DS_Store
+
+# Archivos temporales de LibreOffice / Excel
+.~lock.*
+
+env/
